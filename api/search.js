@@ -39,6 +39,23 @@ const PROVIDERS = {
   }
 };
 
+async function animecixFallback(query, requestedProvider) {
+  const url = `https://animecix.tv/secure/search/${encodeURIComponent(query.replace(/ /g, '-'))}?type=&limit=24`;
+  const response = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!response.ok) throw new Error(`AnimeCix fallback ${response.status}`);
+  const data = await response.json();
+  return (data.results || []).map((item) => ({
+    id: String(item.id || item._id),
+    title: item.name || item.name_english || 'Untitled anime',
+    year: item.year || item.release_date?.slice(0, 4) || null,
+    type: item.title_type || item.type || 'anime',
+    cover: item.poster || item.cover || null,
+    description: item.description || '',
+    provider: 'animecix',
+    providerLabel: `AnimeCix fallback (${requestedProvider})`
+  })).filter((item) => item.id !== 'undefined');
+}
+
 module.exports = async function handler(request, response) {
   const query = String(request.query.q || '').trim();
   const provider = String(request.query.provider || 'animecix');
@@ -46,8 +63,20 @@ module.exports = async function handler(request, response) {
   const source = PROVIDERS[provider] || PROVIDERS.animecix;
   try {
     const results = await source.search(query);
-    return response.status(200).json({ results, provider: source.label });
+    return response.status(200).json({ results, provider: source.label, fallback: false });
   } catch (error) {
-    return response.status(502).json({ error: 'Kaynak şu an yanıt vermiyor.', detail: error.message });
+    if (provider !== 'animecix') {
+      try {
+        const results = await animecixFallback(query, source.label);
+        return response.status(200).json({
+          results,
+          provider: `AnimeCix fallback · ${source.label} yanıt vermedi`,
+          fallback: true
+        });
+      } catch (fallbackError) {
+        return response.status(502).json({ error: 'Kaynaklar şu an yanıt vermiyor.', detail: fallbackError.message });
+      }
+    }
+    return response.status(502).json({ error: 'AnimeCix şu an yanıt vermiyor.', detail: error.message });
   }
 };

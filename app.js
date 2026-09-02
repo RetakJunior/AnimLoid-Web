@@ -44,7 +44,7 @@ async function search(query) {
       return;
     }
     status.className = 'status result-count';
-    status.textContent = `${data.results.length} anime bulundu · ${data.provider}`;
+    status.textContent = `${data.results.length} anime bulundu · ${data.provider}${data.fallback ? ' · geçici katalog' : ''}`;
     results.innerHTML = data.results.map(cardTemplate).join('');
   } catch (error) {
     status.className = 'status error';
