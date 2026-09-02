@@ -38,6 +38,18 @@ function trackEpisode(anime, episode) {
   saveHistory(history);
 }
 
+function watchTemplate(anime, episodes, index) {
+    const episode = episodes[index];
+    const previous = index > 0 ? `<button class="watch-nav" data-watch-index="${index - 1}">← Önceki</button>` : '<span></span>';
+    const next = index < episodes.length - 1 ? `<button class="watch-nav next" data-watch-index="${index + 1}">Sonraki →</button>` : '<span></span>';
+    trackEpisode(anime, episode);
+    return `<div class="watch-layout"><section class="watch-main"><p class="eyebrow">${escapeHtml(anime.title)} / İZLE</p><div class="player-stage"><div class="player-mark">A</div><strong>${escapeHtml(episode.title || `Bölüm ${episode.number}`)}</strong><small>Provider oynatıcı bağlantısı hazırlanıyor</small>${episode.url ? `<a class="player-link" href="${escapeHtml(episode.url)}" target="_blank" rel="noreferrer">Provider’da aç ↗</a>` : ''}</div><div class="watch-controls">${previous}<span>${String(episode.number).padStart(2, '0')} / ${String(episodes.length).padStart(2, '0')}</span>${next}</div></section><aside class="episode-sidebar"><p class="eyebrow">BÖLÜMLER</p><div class="watch-episodes">${episodes.map((item, itemIndex) => `<button class="watch-episode ${itemIndex === index ? 'active' : ''}" data-watch-index="${itemIndex}"><span>${String(item.number).padStart(2, '0')}</span><b>${escapeHtml(item.title || `Bölüm ${item.number}`)}</b></button>`).join('')}</div></aside></div>`;
+}
+
+function openWatch(anime, episodes, index) {
+  detailContent.innerHTML = watchTemplate(anime, episodes, index);
+}
+
 function renderProfile() {
   const history = getHistory();
   const series = [...new Map(history.map((item) => [item.animeId, item])).values()];
@@ -92,7 +104,7 @@ async function showDetails(id, title) {
     if (!response.ok) throw new Error(data.error || 'Detaylar alınamadı.');
     const details = data.details;
     const anime = { id, title: details.title, cover: details.cover };
-    const episodes = details.episodes.length ? details.episodes.map((episode) => `<a class="episode" href="${escapeHtml(episode.url || '#')}" ${episode.url ? 'target="_blank" rel="noreferrer"' : ''} data-episode="${escapeHtml(JSON.stringify(episode))}" data-anime="${escapeHtml(JSON.stringify(anime))}"><span>${String(episode.number).padStart(2, '0')}</span><b>${escapeHtml(episode.title || `Bölüm ${episode.number}`)}</b><small>${episode.url ? 'İZLE ↗' : 'URL YOK'}</small></a>`).join('') : '<p class="empty-detail">Bu provider bölüm listesini şu anda paylaşmadı.</p>';
+    const episodes = details.episodes.length ? details.episodes.map((episode, index) => `<button class="episode" data-watch-index="${index}" data-episode="${escapeHtml(JSON.stringify(episode))}" data-anime="${escapeHtml(JSON.stringify(anime))}"><span>${String(episode.number).padStart(2, '0')}</span><b>${escapeHtml(episode.title || `Bölüm ${episode.number}`)}</b><small>İZLE ↗</small></button>`).join('') : '<p class="empty-detail">Bu provider bölüm listesini şu anda paylaşmadı.</p>';
     detailContent.innerHTML = `<p class="eyebrow">${escapeHtml(data.provider)} / DETAIL</p><h2>${escapeHtml(details.title)}</h2><p class="detail-copy">${escapeHtml(details.description || 'Bölüm listesi ve provider bağlantıları.')}</p><div class="episodes">${episodes}</div>`;
   } catch (error) {
     detailContent.innerHTML = `<p class="eyebrow">HATA</p><h2>Detay alınamadı</h2><p class="detail-copy">${escapeHtml(error.message)}</p>`;
@@ -118,7 +130,18 @@ results.addEventListener('click', (event) => {
 detailContent.addEventListener('click', (event) => {
   const episode = event.target.closest('.episode');
   if (!episode) return;
-  trackEpisode(JSON.parse(episode.dataset.anime), JSON.parse(episode.dataset.episode));
+  event.preventDefault();
+  const anime = JSON.parse(episode.dataset.anime);
+  const episodeList = [...detailContent.querySelectorAll('.episode')].map((item) => JSON.parse(item.dataset.episode));
+  openWatch(anime, episodeList, Number(episode.dataset.watchIndex));
+});
+
+detailContent.addEventListener('click', (event) => {
+  const navigation = event.target.closest('[data-watch-index]');
+  if (!navigation || navigation.classList.contains('episode')) return;
+  const current = detailContent.querySelector('.watch-episode.active');
+  const episodes = [...detailContent.querySelectorAll('.watch-episode')].map((item) => ({ number: Number(item.querySelector('span').textContent), title: item.querySelector('b').textContent }));
+  if (current) openWatch({ title: detailContent.querySelector('.watch-main .eyebrow').textContent.split(' / ')[0] }, episodes, Number(navigation.dataset.watchIndex));
 });
 
 document.addEventListener('click', (event) => {
