@@ -6,6 +6,8 @@ const status = document.querySelector('#status');
 const resultsTitle = document.querySelector('#results-title');
 const dialog = document.querySelector('#detail-dialog');
 const detailContent = document.querySelector('#detail-content');
+const historyKey = 'animloid-watch-history';
+const recommendationData = [{ title: 'Attack on Titan', query: 'Attack on Titan' }, { title: 'Jujutsu Kaisen', query: 'Jujutsu Kaisen' }, { title: 'Demon Slayer', query: 'Demon Slayer' }, { title: 'Vinland Saga', query: 'Vinland Saga' }];
 
 const fallbackCover = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=900&q=80';
 
@@ -19,6 +21,35 @@ function cardTemplate(anime) {
     <div class="poster-wrap"><img src="${escapeHtml(cover)}" alt="${escapeHtml(anime.title)} kapak görseli" loading="lazy" onerror="this.src='${fallbackCover}'" /><span class="provider-tag">${escapeHtml(anime.providerLabel || 'Provider')}</span></div>
     <div class="card-info"><h3>${escapeHtml(anime.title)}</h3><p>${escapeHtml(anime.type || 'anime')} ${anime.year ? `<span>/</span> ${escapeHtml(anime.year)}` : ''}</p></div>
   </article>`;
+}
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(historyKey) || '[]'); } catch { return []; }
+}
+
+function saveHistory(history) { localStorage.setItem(historyKey, JSON.stringify(history.slice(0, 100))); renderProfile(); }
+
+function trackEpisode(anime, episode) {
+  const history = getHistory();
+  const item = { animeId: anime.id, title: anime.title, cover: anime.cover || fallbackCover, episode: episode.number, episodeTitle: episode.title || `Bölüm ${episode.number}`, minutes: 24, watchedAt: Date.now() };
+  const existing = history.findIndex((entry) => entry.animeId === item.animeId && entry.episode === item.episode);
+  if (existing >= 0) history.splice(existing, 1);
+  history.unshift(item);
+  saveHistory(history);
+}
+
+function renderProfile() {
+  const history = getHistory();
+  const series = [...new Map(history.map((item) => [item.animeId, item])).values()];
+  document.querySelector('#watched-episodes').textContent = history.length;
+  document.querySelector('#watched-hours').textContent = (history.length * 24 / 60).toFixed(1);
+  document.querySelector('#watched-series').textContent = series.length;
+  const recent = document.querySelector('#recent-watch');
+  const latest = history[0];
+  recent.innerHTML = latest ? `<button class="recent-card" data-query="${escapeHtml(latest.title)}"><img src="${escapeHtml(latest.cover)}" alt="" /><span><b>${escapeHtml(latest.title)}</b><small>${escapeHtml(latest.episodeTitle)} · devam et ↗</small></span></button>` : '<p class="profile-empty">Henüz bölüm izlenmedi.</p>';
+  const watchedList = document.querySelector('#watched-list');
+  watchedList.innerHTML = series.length ? series.slice(0, 5).map((item) => `<button class="watched-item" data-query="${escapeHtml(item.title)}"><span>${escapeHtml(item.title)}</span><small>${history.filter((entry) => entry.animeId === item.animeId).length} bölüm</small></button>`).join('') : '<p class="profile-empty">İzleme geçmişin burada görünecek.</p>';
+  document.querySelector('#recommendations-list').innerHTML = recommendationData.map((item) => `<button class="recommendation" data-query="${escapeHtml(item.query)}">${escapeHtml(item.title)} <span>↗</span></button>`).join('');
 }
 
 async function readApiResponse(response) {
@@ -59,8 +90,9 @@ async function showDetails(id, title) {
     const response = await fetch(`/api/provider?action=details&id=${encodeURIComponent(id)}&provider=${provider.value}`);
     const data = await readApiResponse(response);
     if (!response.ok) throw new Error(data.error || 'Detaylar alınamadı.');
-    const episodes = details.episodes.length ? details.episodes.map((episode) => `<a class="episode" href="${escapeHtml(episode.url || '#')}" ${episode.url ? 'target="_blank" rel="noreferrer"' : ''}><span>${String(episode.number).padStart(2, '0')}</span><b>${escapeHtml(episode.title || `Bölüm ${episode.number}`)}</b><small>${episode.url ? 'İZLE ↗' : 'URL YOK'}</small></a>`).join('') : '<p class="empty-detail">Bu provider bölüm listesini şu anda paylaşmadı.</p>';
     const details = data.details;
+    const anime = { id, title: details.title, cover: details.cover };
+    const episodes = details.episodes.length ? details.episodes.map((episode) => `<a class="episode" href="${escapeHtml(episode.url || '#')}" ${episode.url ? 'target="_blank" rel="noreferrer"' : ''} data-episode="${escapeHtml(JSON.stringify(episode))}" data-anime="${escapeHtml(JSON.stringify(anime))}"><span>${String(episode.number).padStart(2, '0')}</span><b>${escapeHtml(episode.title || `Bölüm ${episode.number}`)}</b><small>${episode.url ? 'İZLE ↗' : 'URL YOK'}</small></a>`).join('') : '<p class="empty-detail">Bu provider bölüm listesini şu anda paylaşmadı.</p>';
     detailContent.innerHTML = `<p class="eyebrow">${escapeHtml(data.provider)} / DETAIL</p><h2>${escapeHtml(details.title)}</h2><p class="detail-copy">${escapeHtml(details.description || 'Bölüm listesi ve provider bağlantıları.')}</p><div class="episodes">${episodes}</div>`;
   } catch (error) {
     detailContent.innerHTML = `<p class="eyebrow">HATA</p><h2>Detay alınamadı</h2><p class="detail-copy">${escapeHtml(error.message)}</p>`;
@@ -82,6 +114,24 @@ results.addEventListener('click', (event) => {
   const card = event.target.closest('.anime-card');
   if (card) showDetails(card.dataset.id, card.dataset.title);
 });
+
+detailContent.addEventListener('click', (event) => {
+  const episode = event.target.closest('.episode');
+  if (!episode) return;
+  trackEpisode(JSON.parse(episode.dataset.anime), JSON.parse(episode.dataset.episode));
+});
+
+document.addEventListener('click', (event) => {
+  const queryButton = event.target.closest('[data-query]');
+  if (!queryButton || queryButton.closest('.quick-searches')) return;
+  event.preventDefault();
+  input.value = queryButton.dataset.query;
+  search(queryButton.dataset.query);
+  window.scrollTo({ top: document.querySelector('.results-section').offsetTop, behavior: 'smooth' });
+});
+
+document.querySelector('#clear-history').addEventListener('click', () => { localStorage.removeItem(historyKey); renderProfile(); });
+renderProfile();
 
 document.querySelector('.close-dialog').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });

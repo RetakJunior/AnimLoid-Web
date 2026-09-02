@@ -13,7 +13,7 @@
 <body>
   <header class="topbar">
     <a class="brand" href="/" aria-label="AnimLoid ana sayfa"><span class="brand-mark">A</span><span>AnimLoid</span></a>
-    <span class="topbar-note">open anime index <i></i></span>
+    <nav class="top-actions"><a href="#profile">Profil</a><span class="topbar-note">open anime index <i></i></span></nav>
   </header>
   <main>
     <section class="hero">
@@ -31,6 +31,12 @@
       <div class="section-heading"><div><p class="eyebrow">SONUÇLAR</p><h2 id="results-title">Bir şey ara</h2></div><div class="source-control"><label for="provider">KAYNAK</label><select id="provider"><option value="animecix">AnimeCix</option><option value="anizle">Anizle</option><option value="turkanime">TurkAnime</option><option value="hianime">HiAnime</option><option value="allanime">AllAnime</option></select></div></div>
       <div id="status" class="status">Provider’dan veri çekmek için yukarıdaki aramayı kullan.</div>
       <div id="results" class="grid"></div>
+    </section>
+    <section id="profile" class="profile-section">
+      <div class="section-heading"><div><p class="eyebrow">PROFİL / İZLEME GÜNLÜĞÜ</p><h2>Senin anime alanın</h2></div><button id="clear-history" class="text-button" type="button">Geçmişi temizle</button></div>
+      <div class="stats-grid"><div class="stat"><strong id="watched-episodes">0</strong><span>izlenen bölüm</span></div><div class="stat"><strong id="watched-hours">0</strong><span>izlenen saat</span></div><div class="stat"><strong id="watched-series">0</strong><span>takip edilen anime</span></div></div>
+      <div class="profile-columns"><div><p class="eyebrow">SON İZLENEN</p><div id="recent-watch" class="recent-watch"><p class="profile-empty">Henüz bölüm izlenmedi.</p></div></div><div><p class="eyebrow">İZLEDİKLERİN</p><div id="watched-list" class="watched-list"><p class="profile-empty">İzleme geçmişin burada görünecek.</p></div></div></div>
+      <div class="recommendations"><p class="eyebrow">SANA ÖNERİLER</p><div id="recommendations-list" class="recommendation-row"></div></div>
     </section>
   </main>
   <dialog id="detail-dialog"><button class="close-dialog" aria-label="Kapat">×</button><div id="detail-content"></div></dialog>
