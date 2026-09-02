@@ -95,14 +95,19 @@ class handler(__import__("http.server", fromlist=["BaseHTTPRequestHandler"]).Bas
                 return _json_response(self, {"error": "Anime kimliği eksik."}, 400)
             if anime_id.startswith("kitsu:"):
                 try:
-                    details = _anilist_details(anime_id.split(":", 1)[1])
+                    catalog_details = _anilist_details(anime_id.split(":", 1)[1])
+                    matches = scraper.search(catalog_details.title)
+                    if matches:
+                        details = scraper.get_details(matches[0].id) or catalog_details
+                    else:
+                        details = catalog_details
                 except Exception as error:
                     return _json_response(self, {"error": "Katalog detayları alınamadı.", "detail": str(error)}, 502)
             else:
                 details = scraper.get_details(anime_id)
             if not details:
                 return _json_response(self, {"error": "Anime detayları alınamadı.", "detail": scraper.last_error}, 502)
-            return _json_response(self, {"details": _serialize(details), "provider": provider_name})
+            return _json_response(self, {"details": _serialize(details), "provider": provider_name, "playable": not details.id.startswith("kitsu:")})
 
         if action == "streams":
             anime_id = query.get("id", "").strip()

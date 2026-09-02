@@ -110,11 +110,11 @@ async function showDetails(id, title) {
   detailContent.innerHTML = `<div class="detail-loading">${escapeHtml(title)} yükleniyor...</div>`;
   dialog.showModal();
   try {
-    const response = await fetch(`/api/provider?action=details&id=${encodeURIComponent(id)}&provider=${provider.value}`);
+    const response = await fetch(`/api/provider?action=details&id=${encodeURIComponent(id)}&title=${encodeURIComponent(title)}&provider=${provider.value}`);
     const data = await readApiResponse(response);
     if (!response.ok) throw new Error(data.error || 'Detaylar alınamadı.');
     const details = data.details;
-    const anime = { id, title: details.title, cover: details.cover };
+    const anime = { id: details.id, title: details.title, cover: details.cover };
     const episodes = details.episodes.length ? details.episodes.map((episode, index) => `<button class="episode" data-watch-index="${index}" data-episode="${escapeHtml(JSON.stringify(episode))}" data-anime="${escapeHtml(JSON.stringify(anime))}"><span>${String(episode.number).padStart(2, '0')}</span><b>${escapeHtml(episode.title || `Bölüm ${episode.number}`)}</b><small>İZLE ↗</small></button>`).join('') : '<p class="empty-detail">Bu provider bölüm listesini şu anda paylaşmadı.</p>';
     detailContent.innerHTML = `<p class="eyebrow">${escapeHtml(data.provider)} / DETAIL</p><h2>${escapeHtml(details.title)}</h2><p class="detail-copy">${escapeHtml(details.description || 'Bölüm listesi ve provider bağlantıları.')}</p><div class="episodes">${episodes}</div>`;
   } catch (error) {
