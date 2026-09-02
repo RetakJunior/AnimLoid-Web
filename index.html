@@ -9,6 +9,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
+  <style>
+    dialog { width: min(1040px, calc(100% - 48px)); padding: 48px; }
+    .watch-layout { grid-template-columns: minmax(0, 1fr) 240px; gap: 30px; min-height: 530px; }
+    .player-stage { min-height: 385px; }
+    .player-mark { width: 52px; height: 52px; font-size: 18px; }
+    @media (max-width: 760px) { dialog { padding: 34px 22px 24px; } .watch-layout { grid-template-columns: 1fr; } .player-stage { min-height: 220px; } }
+  </style>
 </head>
 <body>
   <header class="topbar">
