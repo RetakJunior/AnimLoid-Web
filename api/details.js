@@ -4,9 +4,20 @@ module.exports = async function handler(request, response) {
   if (!id) return response.status(400).json({ error: 'Anime kimliği eksik.' });
 
   try {
-    const url = `https://animecix.tv/secure/related-videos?episode=1&season=1&titleId=${encodeURIComponent(id)}&videoId=637113`;
-    const upstream = await fetch(url, { headers: { Accept: 'application/json' } });
-    const data = upstream.ok ? await upstream.json() : { videos: [] };
+    const headers = {
+      Accept: 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+      Referer: 'https://animecix.tv/'
+    };
+    let data = { videos: [] };
+    for (const domain of ['https://animecix.tv', 'https://mangacix.net']) {
+      const url = `${domain}/secure/related-videos?episode=1&season=1&titleId=${encodeURIComponent(id)}&videoId=637113`;
+      const upstream = await fetch(url, { headers });
+      if (upstream.ok) {
+        data = await upstream.json();
+        if (data.videos?.length) break;
+      }
+    }
     const videos = Array.isArray(data.videos) ? data.videos : [];
     const episodes = videos.map((video, index) => ({
       id: video.url || video.id || `${id}-${index + 1}`,

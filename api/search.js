@@ -1,10 +1,17 @@
-const PROVIDERS = {
-  animecix: {
-    label: 'AnimeCix',
-    async search(query) {
-      const url = `https://animecix.tv/secure/search/${encodeURIComponent(query.replace(/ /g, '-'))}?type=&limit=24`;
-      const response = await fetch(url, { headers: { Accept: 'application/json' } });
-      if (!response.ok) throw new Error(`AnimeCix ${response.status}`);
+const PROVIDER_HEADERS = {
+  Accept: 'application/json',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+  Referer: 'https://animecix.tv/'
+};
+
+async function searchAnimecix(query, requestedProvider = 'AnimeCix') {
+  const slug = encodeURIComponent(query.replace(/ /g, '-'));
+  const domains = ['https://animecix.tv', 'https://mangacix.net'];
+  let lastError;
+  for (const domain of domains) {
+    try {
+      const response = await fetch(`${domain}/secure/search/${slug}?type=&limit=24`, { headers: PROVIDER_HEADERS });
+      if (!response.ok) throw new Error(`${domain} ${response.status}`);
       const data = await response.json();
       return (data.results || []).map((item) => ({
         id: String(item.id || item._id),
@@ -14,9 +21,19 @@ const PROVIDERS = {
         cover: item.poster || item.cover || null,
         description: item.description || '',
         provider: 'animecix',
-        providerLabel: 'AnimeCix'
+        providerLabel: requestedProvider
       })).filter((item) => item.id !== 'undefined');
+    } catch (error) {
+      lastError = error;
     }
+  }
+  throw lastError || new Error('AnimeCix kaynakları yanıt vermedi.');
+}
+
+const PROVIDERS = {
+  animecix: {
+    label: 'AnimeCix',
+    search: (query) => searchAnimecix(query)
   },
   hianime: {
     label: 'HiAnime',
@@ -40,20 +57,7 @@ const PROVIDERS = {
 };
 
 async function animecixFallback(query, requestedProvider) {
-  const url = `https://animecix.tv/secure/search/${encodeURIComponent(query.replace(/ /g, '-'))}?type=&limit=24`;
-  const response = await fetch(url, { headers: { Accept: 'application/json' } });
-  if (!response.ok) throw new Error(`AnimeCix fallback ${response.status}`);
-  const data = await response.json();
-  return (data.results || []).map((item) => ({
-    id: String(item.id || item._id),
-    title: item.name || item.name_english || 'Untitled anime',
-    year: item.year || item.release_date?.slice(0, 4) || null,
-    type: item.title_type || item.type || 'anime',
-    cover: item.poster || item.cover || null,
-    description: item.description || '',
-    provider: 'animecix',
-    providerLabel: `AnimeCix fallback (${requestedProvider})`
-  })).filter((item) => item.id !== 'undefined');
+  return searchAnimecix(query, `AnimeCix fallback (${requestedProvider})`);
 }
 
 module.exports = async function handler(request, response) {
