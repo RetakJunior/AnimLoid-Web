@@ -6,6 +6,7 @@ const status = document.querySelector('#status');
 const resultsTitle = document.querySelector('#results-title');
 const dialog = document.querySelector('#detail-dialog');
 const detailContent = document.querySelector('#detail-content');
+let currentWatch = null;
 const historyKey = 'animloid-watch-history';
 const recommendationData = [{ title: 'Attack on Titan', query: 'Attack on Titan' }, { title: 'Jujutsu Kaisen', query: 'Jujutsu Kaisen' }, { title: 'Demon Slayer', query: 'Demon Slayer' }, { title: 'Vinland Saga', query: 'Vinland Saga' }];
 
@@ -46,17 +47,22 @@ function watchTemplate(anime, episodes, index, stream) {
     const playerUrl = stream?.url || episode.url;
     const directVideo = playerUrl && /\.(mp4|m3u8)(\?|$)/i.test(playerUrl);
     const player = playerUrl ? (directVideo ? `<video class="video-player" controls autoplay playsinline src="${escapeHtml(playerUrl)}"></video>` : `<iframe class="video-frame" src="${escapeHtml(playerUrl)}" title="${escapeHtml(episode.title || 'Anime bölümü')}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`) : `<div class="player-mark">A</div><strong>${escapeHtml(episode.title || `Bölüm ${episode.number}`)}</strong><small>Bu provider oynatıcı bağlantısı döndürmedi</small>`;
-    return `<div class="watch-layout"><section class="watch-main"><p class="eyebrow">${escapeHtml(anime.title)} / İZLE</p><div class="player-stage">${player}</div><div class="watch-controls">${previous}<span>${String(episode.number).padStart(2, '0')} / ${String(episodes.length).padStart(2, '0')}</span>${next}</div></section><aside class="episode-sidebar"><p class="eyebrow">BÖLÜMLER</p><div class="watch-episodes">${episodes.map((item, itemIndex) => `<button class="watch-episode ${itemIndex === index ? 'active' : ''}" data-watch-index="${itemIndex}"><span>${String(item.number).padStart(2, '0')}</span><b>${escapeHtml(item.title || `Bölüm ${item.number}`)}</b></button>`).join('')}</div></aside></div>`;
+    const sourceButtons = (anime.streams || []).map((item, streamIndex) => `<button class="source-button ${item.url === stream?.url ? 'active' : ''}" data-stream-url="${escapeHtml(item.url)}" data-stream-index="${streamIndex}">${escapeHtml(item.server || `Kaynak ${streamIndex + 1}`)}</button>`).join('');
+    return `<div class="watch-layout"><section class="watch-main"><p class="eyebrow">${escapeHtml(anime.title)} / İZLE</p><div class="player-stage">${player}</div><div class="source-picker"><span>KAYNAK</span>${sourceButtons}</div><div class="watch-controls">${previous}<span>${String(episode.number).padStart(2, '0')} / ${String(episodes.length).padStart(2, '0')}</span>${next}</div></section><aside class="episode-sidebar"><p class="eyebrow">BÖLÜMLER</p><div class="watch-episodes">${episodes.map((item, itemIndex) => `<button class="watch-episode ${itemIndex === index ? 'active' : ''}" data-watch-index="${itemIndex}"><span>${String(item.number).padStart(2, '0')}</span><b>${escapeHtml(item.title || `Bölüm ${item.number}`)}</b></button>`).join('')}</div></aside></div>`;
 }
 
 async function openWatch(anime, episodes, index) {
+  currentWatch = { anime, episodes };
   detailContent.innerHTML = '<div class="detail-loading">Video akışı aranıyor...</div>';
   let stream = null;
   try {
     const episode = episodes[index];
     const response = await fetch(`/api/provider?action=streams&id=${encodeURIComponent(anime.id)}&episode=${encodeURIComponent(episode.id)}&provider=${encodeURIComponent(anime.provider || provider.value)}`);
     const data = await readApiResponse(response);
-    stream = data.streams?.[0] || null;
+    const streams = (data.streams || []).filter((item) => item.url);
+    streams.sort((a, b) => { const score = (item) => /HDVID|UQLOAD|GDRIVE/i.test(item.server || '') ? 0 : /VK|MP4UPLOAD/i.test(item.server || '') ? 2 : 1; return score(a) - score(b); });
+    stream = streams[0] || null;
+    anime.streams = streams;
   } catch { stream = null; }
   detailContent.innerHTML = watchTemplate(anime, episodes, index, stream);
 }
@@ -139,6 +145,14 @@ results.addEventListener('click', (event) => {
 });
 
 detailContent.addEventListener('click', (event) => {
+  const source = event.target.closest('.source-button');
+  if (source) {
+    const url = source.dataset.streamUrl;
+    const player = detailContent.querySelector('.video-player, .video-frame');
+    if (player) { player.src = url; if (player.tagName === 'VIDEO') player.load(); }
+    detailContent.querySelectorAll('.source-button').forEach((button) => button.classList.toggle('active', button === source));
+    return;
+  }
   const episode = event.target.closest('.episode');
   if (!episode) return;
   event.preventDefault();
@@ -152,7 +166,7 @@ detailContent.addEventListener('click', (event) => {
   if (!navigation || navigation.classList.contains('episode')) return;
   const current = detailContent.querySelector('.watch-episode.active');
   const episodes = [...detailContent.querySelectorAll('.watch-episode')].map((item) => ({ number: Number(item.querySelector('span').textContent), title: item.querySelector('b').textContent }));
-  if (current) openWatch({ title: detailContent.querySelector('.watch-main .eyebrow').textContent.split(' / ')[0] }, episodes, Number(navigation.dataset.watchIndex));
+  if (currentWatch) openWatch(currentWatch.anime, currentWatch.episodes, Number(navigation.dataset.watchIndex));
 });
 
 document.addEventListener('click', (event) => {
