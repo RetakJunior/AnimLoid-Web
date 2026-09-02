@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 import urllib.request
 import requests
@@ -8,6 +9,8 @@ from urllib.parse import parse_qs, quote, urlparse
 
 CLONE_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(CLONE_ROOT))
+os.environ["HOME"] = "/tmp"
+os.environ["USERPROFILE"] = "/tmp"
 
 from weeb_cli.providers import list_providers
 from weeb_cli.providers.base import AnimeResult, AnimeDetails, Episode
