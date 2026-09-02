@@ -104,6 +104,14 @@ class handler(__import__("http.server", fromlist=["BaseHTTPRequestHandler"]).Bas
                 return _json_response(self, {"error": "Anime detayları alınamadı.", "detail": scraper.last_error}, 502)
             return _json_response(self, {"details": _serialize(details), "provider": provider_name})
 
+        if action == "streams":
+            anime_id = query.get("id", "").strip()
+            episode_id = query.get("episode", "").strip()
+            if not anime_id or not episode_id or anime_id.startswith("kitsu:"):
+                return _json_response(self, {"streams": [], "provider": provider_name})
+            streams = scraper.get_streams(anime_id, episode_id)
+            return _json_response(self, {"streams": [_serialize(item) for item in streams], "provider": provider_name, "error": scraper.last_error})
+
         return _json_response(self, {"error": "Geçersiz action."}, 400)
 
     def log_message(self, *_args):

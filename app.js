@@ -38,16 +38,25 @@ function trackEpisode(anime, episode) {
   saveHistory(history);
 }
 
-function watchTemplate(anime, episodes, index) {
+function watchTemplate(anime, episodes, index, stream) {
     const episode = episodes[index];
     const previous = index > 0 ? `<button class="watch-nav" data-watch-index="${index - 1}">← Önceki</button>` : '<span></span>';
     const next = index < episodes.length - 1 ? `<button class="watch-nav next" data-watch-index="${index + 1}">Sonraki →</button>` : '<span></span>';
     trackEpisode(anime, episode);
-    return `<div class="watch-layout"><section class="watch-main"><p class="eyebrow">${escapeHtml(anime.title)} / İZLE</p><div class="player-stage"><div class="player-mark">A</div><strong>${escapeHtml(episode.title || `Bölüm ${episode.number}`)}</strong><small>Provider oynatıcı bağlantısı hazırlanıyor</small>${episode.url ? `<a class="player-link" href="${escapeHtml(episode.url)}" target="_blank" rel="noreferrer">Provider’da aç ↗</a>` : ''}</div><div class="watch-controls">${previous}<span>${String(episode.number).padStart(2, '0')} / ${String(episodes.length).padStart(2, '0')}</span>${next}</div></section><aside class="episode-sidebar"><p class="eyebrow">BÖLÜMLER</p><div class="watch-episodes">${episodes.map((item, itemIndex) => `<button class="watch-episode ${itemIndex === index ? 'active' : ''}" data-watch-index="${itemIndex}"><span>${String(item.number).padStart(2, '0')}</span><b>${escapeHtml(item.title || `Bölüm ${item.number}`)}</b></button>`).join('')}</div></aside></div>`;
+    const player = stream ? `<video class="video-player" controls autoplay playsinline src="${escapeHtml(stream.url)}"></video>` : `<div class="player-mark">A</div><strong>${escapeHtml(episode.title || `Bölüm ${episode.number}`)}</strong><small>Bu provider doğrudan video akışı döndürmedi</small>${episode.url ? `<a class="player-link" href="${escapeHtml(episode.url)}" target="_blank" rel="noreferrer">Provider’da aç ↗</a>` : ''}`;
+    return `<div class="watch-layout"><section class="watch-main"><p class="eyebrow">${escapeHtml(anime.title)} / İZLE</p><div class="player-stage">${player}</div><div class="watch-controls">${previous}<span>${String(episode.number).padStart(2, '0')} / ${String(episodes.length).padStart(2, '0')}</span>${next}</div></section><aside class="episode-sidebar"><p class="eyebrow">BÖLÜMLER</p><div class="watch-episodes">${episodes.map((item, itemIndex) => `<button class="watch-episode ${itemIndex === index ? 'active' : ''}" data-watch-index="${itemIndex}"><span>${String(item.number).padStart(2, '0')}</span><b>${escapeHtml(item.title || `Bölüm ${item.number}`)}</b></button>`).join('')}</div></aside></div>`;
 }
 
-function openWatch(anime, episodes, index) {
-  detailContent.innerHTML = watchTemplate(anime, episodes, index);
+async function openWatch(anime, episodes, index) {
+  detailContent.innerHTML = '<div class="detail-loading">Video akışı aranıyor...</div>';
+  let stream = null;
+  try {
+    const episode = episodes[index];
+    const response = await fetch(`/api/provider?action=streams&id=${encodeURIComponent(anime.id)}&episode=${encodeURIComponent(episode.id)}&provider=${provider.value}`);
+    const data = await readApiResponse(response);
+    stream = data.streams?.[0] || null;
+  } catch { stream = null; }
+  detailContent.innerHTML = watchTemplate(anime, episodes, index, stream);
 }
 
 function renderProfile() {
