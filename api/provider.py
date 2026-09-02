@@ -62,6 +62,20 @@ def _anilist_details(anime_id):
     return AnimeDetails(id=f"kitsu:{anime_id}", title=title, description=item.get("synopsis"), cover=(item.get("posterImage") or {}).get("large"), year=(item.get("startDate") or "")[:4] or None, episodes=episodes, total_episodes=len(episodes))
 
 
+def _resolve_playable(title, preferred):
+    names = [preferred] + [name for name in ("turkanime", "anizle", "animecix") if name != preferred]
+    normalized = "".join(character.lower() for character in title if character.isalnum())
+    for name in names:
+        candidate = Scraper(name)
+        matches = candidate.search(title)
+        exact = [item for item in matches if "".join(character.lower() for character in item.title if character.isalnum()) == normalized]
+        for item in exact + matches:
+            details = candidate.get_details(item.id)
+            if details and details.episodes:
+                return details, name
+    return None, None
+
+
 class handler(__import__("http.server", fromlist=["BaseHTTPRequestHandler"]).BaseHTTPRequestHandler):
     def do_GET(self):
         query = _query(self)
@@ -96,9 +110,9 @@ class handler(__import__("http.server", fromlist=["BaseHTTPRequestHandler"]).Bas
             if anime_id.startswith("kitsu:"):
                 try:
                     catalog_details = _anilist_details(anime_id.split(":", 1)[1])
-                    matches = scraper.search(catalog_details.title)
-                    if matches:
-                        details = scraper.get_details(matches[0].id) or catalog_details
+                    details, resolved_provider = _resolve_playable(catalog_details.title, provider_name)
+                    if details:
+                        provider_name = resolved_provider
                     else:
                         details = catalog_details
                 except Exception as error:

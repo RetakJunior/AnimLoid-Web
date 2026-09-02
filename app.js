@@ -54,7 +54,7 @@ async function openWatch(anime, episodes, index) {
   let stream = null;
   try {
     const episode = episodes[index];
-    const response = await fetch(`/api/provider?action=streams&id=${encodeURIComponent(anime.id)}&episode=${encodeURIComponent(episode.id)}&provider=${provider.value}`);
+    const response = await fetch(`/api/provider?action=streams&id=${encodeURIComponent(anime.id)}&episode=${encodeURIComponent(episode.id)}&provider=${encodeURIComponent(anime.provider || provider.value)}`);
     const data = await readApiResponse(response);
     stream = data.streams?.[0] || null;
   } catch { stream = null; }
@@ -114,7 +114,7 @@ async function showDetails(id, title) {
     const data = await readApiResponse(response);
     if (!response.ok) throw new Error(data.error || 'Detaylar alınamadı.');
     const details = data.details;
-    const anime = { id: details.id, title: details.title, cover: details.cover };
+    const anime = { id: details.id, title: details.title, cover: details.cover, provider: data.provider };
     const episodes = details.episodes.length ? details.episodes.map((episode, index) => `<button class="episode" data-watch-index="${index}" data-episode="${escapeHtml(JSON.stringify(episode))}" data-anime="${escapeHtml(JSON.stringify(anime))}"><span>${String(episode.number).padStart(2, '0')}</span><b>${escapeHtml(episode.title || `Bölüm ${episode.number}`)}</b><small>İZLE ↗</small></button>`).join('') : '<p class="empty-detail">Bu provider bölüm listesini şu anda paylaşmadı.</p>';
     detailContent.innerHTML = `<p class="eyebrow">${escapeHtml(data.provider)} / DETAIL</p><h2>${escapeHtml(details.title)}</h2><p class="detail-copy">${escapeHtml(details.description || 'Bölüm listesi ve provider bağlantıları.')}</p><div class="episodes">${episodes}</div>`;
   } catch (error) {
