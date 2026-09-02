@@ -109,7 +109,10 @@ class handler(__import__("http.server", fromlist=["BaseHTTPRequestHandler"]).Bas
             episode_id = query.get("episode", "").strip()
             if not anime_id or not episode_id or anime_id.startswith("kitsu:"):
                 return _json_response(self, {"streams": [], "provider": provider_name})
-            streams = scraper.get_streams(anime_id, episode_id)
+            try:
+                streams = scraper.get_streams(anime_id, episode_id)
+            except Exception as error:
+                return _json_response(self, {"streams": [], "provider": provider_name, "error": str(error)})
             return _json_response(self, {"streams": [_serialize(item) for item in streams], "provider": provider_name, "error": scraper.last_error})
 
         return _json_response(self, {"error": "Geçersiz action."}, 400)
