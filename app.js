@@ -35,7 +35,7 @@ async function search(query) {
   results.innerHTML = '';
   resultsTitle.textContent = `“${query}” sonuçları`;
   try {
-    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&provider=${provider.value}`);
+    const response = await fetch(`/api/provider?action=search&q=${encodeURIComponent(query)}&provider=${provider.value}`);
     const data = await readApiResponse(response);
     if (!response.ok) throw new Error(data.error || 'Arama başarısız.');
     if (!data.results.length) {
@@ -56,11 +56,12 @@ async function showDetails(id, title) {
   detailContent.innerHTML = `<div class="detail-loading">${escapeHtml(title)} yükleniyor...</div>`;
   dialog.showModal();
   try {
-    const response = await fetch(`/api/details?id=${encodeURIComponent(id)}&title=${encodeURIComponent(title)}`);
+    const response = await fetch(`/api/provider?action=details&id=${encodeURIComponent(id)}&provider=${provider.value}`);
     const data = await readApiResponse(response);
     if (!response.ok) throw new Error(data.error || 'Detaylar alınamadı.');
-    const episodes = data.episodes.length ? data.episodes.map((episode) => `<a class="episode" href="${escapeHtml(episode.url || '#')}" ${episode.url ? 'target="_blank" rel="noreferrer"' : ''}><span>${String(episode.number).padStart(2, '0')}</span><b>${escapeHtml(episode.title)}</b><small>${episode.url ? 'İZLE ↗' : 'URL YOK'}</small></a>`).join('') : '<p class="empty-detail">Bu provider bölüm listesini şu anda paylaşmadı.</p>';
-    detailContent.innerHTML = `<p class="eyebrow">${escapeHtml(data.provider)} / DETAIL</p><h2>${escapeHtml(data.title)}</h2><p class="detail-copy">Bölüm listesi ve provider bağlantıları.</p><div class="episodes">${episodes}</div>`;
+    const episodes = details.episodes.length ? details.episodes.map((episode) => `<a class="episode" href="${escapeHtml(episode.url || '#')}" ${episode.url ? 'target="_blank" rel="noreferrer"' : ''}><span>${String(episode.number).padStart(2, '0')}</span><b>${escapeHtml(episode.title || `Bölüm ${episode.number}`)}</b><small>${episode.url ? 'İZLE ↗' : 'URL YOK'}</small></a>`).join('') : '<p class="empty-detail">Bu provider bölüm listesini şu anda paylaşmadı.</p>';
+    const details = data.details;
+    detailContent.innerHTML = `<p class="eyebrow">${escapeHtml(data.provider)} / DETAIL</p><h2>${escapeHtml(details.title)}</h2><p class="detail-copy">${escapeHtml(details.description || 'Bölüm listesi ve provider bağlantıları.')}</p><div class="episodes">${episodes}</div>`;
   } catch (error) {
     detailContent.innerHTML = `<p class="eyebrow">HATA</p><h2>Detay alınamadı</h2><p class="detail-copy">${escapeHtml(error.message)}</p>`;
   }
