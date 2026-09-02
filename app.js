@@ -46,9 +46,9 @@ function watchTemplate(anime, episodes, index, stream) {
     trackEpisode(anime, episode);
     const playerUrl = stream?.url || episode.url;
     const directVideo = playerUrl && /\.(mp4|m3u8)(\?|$)/i.test(playerUrl);
-    const player = playerUrl ? (directVideo ? `<video class="video-player" controls autoplay playsinline src="${escapeHtml(playerUrl)}"></video>` : `<iframe class="video-frame" src="${escapeHtml(playerUrl)}" title="${escapeHtml(episode.title || 'Anime bölümü')}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`) : `<div class="player-mark">A</div><strong>${escapeHtml(episode.title || `Bölüm ${episode.number}`)}</strong><small>Bu provider oynatıcı bağlantısı döndürmedi</small>`;
+    const player = playerUrl ? (directVideo ? `<video class="video-player" controls autoplay playsinline src="${escapeHtml(playerUrl)}"></video>` : `<iframe class="video-frame" src="${escapeHtml(playerUrl)}" title="${escapeHtml(episode.title || 'Anime bölümü')}" allow="autoplay; fullscreen; picture-in-picture"></iframe>`) : `<div class="player-mark">A</div><strong>${escapeHtml(episode.title || `Bölüm ${episode.number}`)}</strong><small>Bu provider oynatıcı bağlantısı döndürmedi</small>`;
     const sourceButtons = (anime.streams || []).map((item, streamIndex) => `<button class="source-button ${item.url === stream?.url ? 'active' : ''}" data-stream-url="${escapeHtml(item.url)}" data-stream-index="${streamIndex}">${escapeHtml(item.server || `Kaynak ${streamIndex + 1}`)}</button>`).join('');
-    return `<div class="watch-layout"><section class="watch-main"><p class="eyebrow">${escapeHtml(anime.title)} / İZLE</p><div class="player-stage">${player}</div><div class="source-picker"><span>KAYNAK</span>${sourceButtons}</div><div class="watch-controls">${previous}<span>${String(episode.number).padStart(2, '0')} / ${String(episodes.length).padStart(2, '0')}</span>${next}</div></section><aside class="episode-sidebar"><p class="eyebrow">BÖLÜMLER</p><div class="watch-episodes">${episodes.map((item, itemIndex) => `<button class="watch-episode ${itemIndex === index ? 'active' : ''}" data-watch-index="${itemIndex}"><span>${String(item.number).padStart(2, '0')}</span><b>${escapeHtml(item.title || `Bölüm ${item.number}`)}</b></button>`).join('')}</div></aside></div>`;
+    return `<div class="watch-layout"><section class="watch-main"><p class="eyebrow">${escapeHtml(anime.title)} / İZLE</p><div class="player-stage" id="player-stage">${player}<button class="fullscreen-button" type="button" aria-label="Tam ekran">⛶</button></div><div class="source-picker"><span>KAYNAK</span>${sourceButtons}</div><div class="watch-controls">${previous}<span>${String(episode.number).padStart(2, '0')} / ${String(episodes.length).padStart(2, '0')}</span>${next}</div></section><aside class="episode-sidebar"><p class="eyebrow">BÖLÜMLER</p><div class="watch-episodes">${episodes.map((item, itemIndex) => `<button class="watch-episode ${itemIndex === index ? 'active' : ''}" data-watch-index="${itemIndex}"><span>${String(item.number).padStart(2, '0')}</span><b>${escapeHtml(item.title || `Bölüm ${item.number}`)}</b></button>`).join('')}</div></aside></div>`;
 }
 
 async function openWatch(anime, episodes, index) {
@@ -145,6 +145,13 @@ results.addEventListener('click', (event) => {
 });
 
 detailContent.addEventListener('click', (event) => {
+  const fullscreen = event.target.closest('.fullscreen-button');
+  if (fullscreen) {
+    const stage = detailContent.querySelector('#player-stage');
+    if (document.fullscreenElement) document.exitFullscreen();
+    else stage?.requestFullscreen();
+    return;
+  }
   const source = event.target.closest('.source-button');
   if (source) {
     const url = source.dataset.streamUrl;

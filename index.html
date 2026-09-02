@@ -20,6 +20,11 @@
     .source-picker > span { color: var(--muted); margin-right: 5px; }
     .source-button { border: 1px solid var(--line); background: transparent; color: var(--muted); padding: 6px 8px; cursor: pointer; font: inherit; }
     .source-button.active, .source-button:hover { border-color: var(--accent); color: var(--ink); background: #f0c4b9; }
+    .player-stage { position: relative; }
+    .fullscreen-button { position: absolute; right: 14px; bottom: 14px; width: 36px; height: 36px; border: 1px solid #777; background: rgba(23, 23, 23, .85); color: var(--paper); cursor: pointer; font-size: 20px; line-height: 1; }
+    .fullscreen-button:hover { border-color: var(--accent); color: var(--accent); }
+    #player-stage:fullscreen { padding: 0; background: #000; }
+    #player-stage:fullscreen .video-frame, #player-stage:fullscreen .video-player { width: 100vw; height: 100vh; min-height: 100vh; }
     @media (max-width: 760px) { dialog { padding: 34px 22px 24px; } .watch-layout { grid-template-columns: 1fr; } .player-stage { min-height: 220px; } .video-player, .video-frame { min-height: 220px; height: 220px; } }
   </style>
 </head>
