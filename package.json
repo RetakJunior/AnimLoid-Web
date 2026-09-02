@@ -1,0 +1,15 @@
+{
+  "name": "animloid-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  },
+  "devDependencies": {
+    "vercel": "^59.11.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

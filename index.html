@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AnimLoid ile anime keşfet. Birden fazla provider, sade arayüz." />
+  <title>AnimLoid / Anime keşfi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="AnimLoid ana sayfa"><span class="brand-mark">A</span><span>AnimLoid</span></a>
+    <span class="topbar-note">open anime index <i></i></span>
+  </header>
+  <main>
+    <section class="hero">
+      <p class="eyebrow">ANIME DISCOVERY / 01</p>
+      <h1>Ne izlemek<br /><em>istersin?</em></h1>
+      <p class="hero-copy">AnimLoid provider’larından anime ara, detayları incele ve bölümlerine hızlıca ulaş.</p>
+      <form id="search-form" class="searchbar">
+        <span class="search-icon">⌕</span>
+        <input id="search-input" type="search" placeholder="Anime adı yaz..." autocomplete="off" />
+        <button type="submit">Ara <span>↵</span></button>
+      </form>
+      <div class="quick-searches"><span>ÖNERİLEN</span><button data-query="Naruto">Naruto</button><button data-query="One Piece">One Piece</button><button data-query="Solo Leveling">Solo Leveling</button></div>
+    </section>
+    <section class="results-section" aria-live="polite">
+      <div class="section-heading"><div><p class="eyebrow">SONUÇLAR</p><h2 id="results-title">Bir şey ara</h2></div><div class="source-control"><label for="provider">KAYNAK</label><select id="provider"><option value="animecix">AnimeCix</option><option value="hianime">HiAnime</option><option value="anizle">Anizle</option></select></div></div>
+      <div id="status" class="status">Provider’dan veri çekmek için yukarıdaki aramayı kullan.</div>
+      <div id="results" class="grid"></div>
+    </section>
+  </main>
+  <dialog id="detail-dialog"><button class="close-dialog" aria-label="Kapat">×</button><div id="detail-content"></div></dialog>
+  <footer><span>ANIMLOID WEB</span><span>Powered by <a href="https://github.com/RetakJunior/AnimLoid" target="_blank" rel="noreferrer">AnimLoid providers</a></span></footer>
+  <script src="/app.js"></script>
+</body>
+</html>
